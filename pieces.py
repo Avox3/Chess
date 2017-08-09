@@ -3,7 +3,6 @@ import os
 
 from PIL import ImageTk
 
-
 BASE_DIR = os.path.dirname(__file__)
 
 WHITE = 0
@@ -16,6 +15,7 @@ def get_icon_image(icon):
     :param icon:
     :return:
     """
+
     icon_path = os.path.join(BASE_DIR, 'assets', icon) + '.png'
     if os.path.exists(icon_path):
         return ImageTk.PhotoImage(file=icon_path)
@@ -23,52 +23,70 @@ def get_icon_image(icon):
     raise Exception
 
 
-class ChessPiece(object):
-    def __init__(self, x, y, icon):
-        self.x = x
-        self.y = y
+def reverse_board(squares):
+    squares = squares[::-1]
 
-        self.icon = get_icon_image(icon)
+
+class ChessPiece(object):
+    def __init__(self, icon_path):
+        """
+
+        :param icon:
+        :param is_white:
+        :return:
+        """
+
+        self.is_white = 'white' in icon_path
+        self.icon_path = icon_path
+        self.icon = get_icon_image(icon_path)
+
+    def get_movements(self, square, all_squares):
+        print 'wtf'
 
 
 class Pawn(ChessPiece):
 
-    def __init__(self, x, y, icon, side):
-        super(Pawn, self).__init__(x, y, icon)
+    def get_movements(self, square, all_squares):
+        super(Pawn, self).get_movements(self, square, all_squares)
 
-        self.side = side
-
-        # self.icon = ImageTk.PhotoImage(file=os.path.join(BASE_DIR, ''))
-
-    def get_movements(self):
         movements = []
 
-        if self.side == WHITE:
-            if
+        if square.row == 1:
+            movements.extend([(row, square.col) for row in xrange(square.row+1, square.row+3)])
+        print movements
+        return movements
 
 
 class Bishop(ChessPiece):
 
-    def __init__(self, x, y, icon):
-        super(Bishop, self).__init__(x, y, icon)
+    def get_movements(self, square, all_squares):
+        pass
 
 
 class Knight(ChessPiece):
 
-    def __init__(self, x, y, icon):
-        super(Knight, self).__init__(x, y, icon)
+    def get_movements(self, square, all_squares):
+        pass
 
 
 class Rook(ChessPiece):
-    def __init__(self, x, y, icon):
-        super(Rook, self).__init__(x, y, icon)
+
+    def get_movements(self, square, all_squares):
+        pass
 
 
 class Queen(ChessPiece):
-    def __init__(self, x, y, icon):
-        super(Queen, self).__init__(x, y, icon)
+
+    def get_movements(self, square, all_squares):
+        pass
 
 
 class King(ChessPiece):
-    def __init__(self, x, y, icon):
-        super(King, self).__init__(x, y, icon)
+
+    def __init__(self, icon, is_white):
+        super(King, self).__init__(self, icon, is_white)
+
+        self.moved = False
+
+    def get_movements(self, square, all_squares):
+        pass

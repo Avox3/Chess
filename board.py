@@ -37,15 +37,15 @@ class ChessBoard:
 
         # first row pieces
         self.get_symmetric((0, 0), Rook('rook_black'), twice=True)
-        self.get_symmetric((0, 1), Rook('knight_black'), twice=True)
-        self.get_symmetric((0, 2), Rook('bishop_black'), twice=True)
+        self.get_symmetric((0, 1), Knight('knight_black'), twice=True)
+        self.get_symmetric((0, 2), Bishop('bishop_black'), twice=True)
 
         self.get_symmetric((0, 3), Pawn('queen_black'))
         self.get_symmetric((0, 4), Pawn('king_black'))
 
         # second row pieces - pawns
-        for col in xrange(8):
-            self.get_symmetric((1, col), Pawn('pawn_black'))
+        for col in xrange(4):
+            self.get_symmetric((1, col), Pawn('pawn_black'), twice=True)
 
     @staticmethod
     def is_square_used(pieces, x, y):
@@ -70,7 +70,7 @@ class ChessBoard:
             for col in xrange(8):
                 self.squares[row][col].movement = False
 
-    def show_possible_movements(self, piece):
+    def show_possible_movements(self, square):
         """
 
         :param piece:
@@ -79,26 +79,24 @@ class ChessBoard:
 
         self.clear_board()  # clear previous possible movements
 
-        movements = piece.get_movements()
-        for (row, col) in movements:
-            self.squares[row][col].movement = True
+        # set moving piece
+        self.moving_piece = square.piece
+        self.possible_movements = self.moving_piece.get_movements(square.get_point(), self.squares)
 
-        self.update_board()
+        self.update_board()  # update changes
 
-    def button_command(self, square_btn):
+    def button_command(self, point):
 
-        if square_btn.piece:  # choose piece to move
+        row, col = point
+        square_btn = self.squares[row][col]
+        piece = self.pieces.get((row, col))
 
-            piece = square_btn.piece
+        if piece:  # choose piece to move
+
             if not piece.is_white == self.white_turn:
                 return
 
-            self.possible_movements = piece.get_movements(square_btn.get_point(), self.squares)
-            self.moving_piece = piece
-
-            for movement in self.possible_movements:
-                print 'wtf'
-                self.squares[movement[0]][movement[1]].set_background('green')
+            self.show_possible_movements(square_btn)
 
         else:  # move piece to destination
             if square_btn.get_point() in self.possible_movements:
@@ -120,11 +118,13 @@ class ChessBoard:
             for col in xrange(8):
 
                 square_btn = self.squares[row][col]
-                square_btn.config(command=lambda x=square_btn: self.button_command(x))
 
                 if square_btn.piece:
                     square_btn.config(image=square_btn.piece.icon)
                     square_btn.image = square_btn.piece.icon
+
+                if (row, col) in self.possible_movements:
+                    square_btn.config(bg="green")
 
     def starting(self):
 
@@ -151,15 +151,18 @@ class ChessBoard:
                 if square_piece:
                     square_btn.config(image=square_piece.icon)
                     square_btn.image = square_piece.icon
+                    square_btn.piece = square_piece
+
+                square_btn.config(command=lambda x=(row, col): self.button_command(x))
 
                 row_squares.append(square_btn)
-
             self.squares.append(row_squares)
 
     def __init__(self):
 
         self.root = Tk()
         self.root.title('Chess')
+        self.root.geometry('500x500')
 
         self.pieces = {}
         self.squares = []
@@ -202,7 +205,7 @@ class SquareBtn(Button):
         :param color:
         :return:
         """
-        self.configure(bg=color)
+        self.config(bg=color)
 
     def get_point(self):
         """

@@ -46,48 +46,48 @@ class ChessPiece(object):
         self.row, self.col = square
         return [(5, 5)]
 
+
 class Pawn(ChessPiece):
 
     def get_movements(self, square, all_squares):
         super(Pawn, self).get_movements(square, all_squares)
 
-        movements = [(5, 5)]
-        #
-        # if square[0] == 1:
-        #     movements.extend([(row, square.col) for row in xrange(square.row+1, square.row+3)])
+        movements = [(square[0] - 1, square[1])]
+        if square[0] == 6:  # initial location
+            movements.append((square[0] - 2, square[1]))
+
         return movements
 
 
 class Bishop(ChessPiece):
 
     def get_movements(self, square, all_squares):
-        pass
+        return []
 
 
 class Knight(ChessPiece):
 
     def get_movements(self, square, all_squares):
-        pass
+        return []
 
 
 class Rook(ChessPiece):
 
     def get_movements(self, square, all_squares):
-        pass
+        return []
 
 
 class Queen(ChessPiece):
 
     def get_movements(self, square, all_squares):
-        pass
+        return []
 
 
 class King(ChessPiece):
 
     def __init__(self, icon):
         super(King, self).__init__(icon)
-
         self.moved = False
 
     def get_movements(self, square, all_squares):
-        pass
+        return []

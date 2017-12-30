@@ -24,18 +24,18 @@ class ChessBoard:
 
         # set black side
         icon_path = piece_type.__name__.lower() + '_black'
-        curr_pieces.append(Pawn(*point, icon_path=icon_path))
+        curr_pieces.append(piece_type(*point, icon_path=icon_path))
 
         if twice:
             row, col = point
-            curr_pieces.append(Pawn(row, 7 - col, icon_path=icon_path))
+            curr_pieces.append(piece_type(row, 7 - col, icon_path=icon_path))
 
         # set white side
         icon_path = piece_type.__name__.lower() + '_white'
 
         for piece in curr_pieces:
             row, col = piece.get_point()
-            self.pieces.append(Pawn(7 - row, col, icon_path=icon_path))
+            self.pieces.append(piece_type(7 - row, col, icon_path=icon_path))
 
         self.pieces += curr_pieces
 
@@ -59,7 +59,7 @@ class ChessBoard:
 
         for piece in self.pieces:
             row, col = piece.get_point()
-            piece.set_point(7 - row, col)
+            piece.set_point(7 - row, 7 - col)
 
         self.update_board()
 
@@ -92,7 +92,7 @@ class ChessBoard:
         self.moving_piece = self.get_piece(*square.get_point())
         if not self.moving_piece:
             return
-        self.possible_movements = self.moving_piece.get_movements(self.squares)
+        self.possible_movements = self.moving_piece.get_movements(self.pieces)
 
     def button_command(self, point):
         """
@@ -122,7 +122,12 @@ class ChessBoard:
         :type dst_square: SquareBtn
         """
 
-        # move piece from src to dst
+        row, col = dst_square.get_point()
+        enemy_piece = self.get_piece(row, col)
+        if enemy_piece:
+            self.pieces.remove(enemy_piece)
+
+        # move piece to destination square
         self.moving_piece.set_point(*dst_square.get_point())
         self.moving_piece = None
         self.possible_movements = []
@@ -165,7 +170,7 @@ class ChessBoard:
             for col in xrange(8):
                 Grid.columnconfigure(self.root, col, weight=1)
 
-                if (9 * row + col) % 2 == 0:
+                if (row + col) % 2 == 0:
                     square_color = 'white'
                 else:
                     square_color = 'grey'
@@ -187,7 +192,7 @@ class ChessBoard:
 
         self.root = Tk()
         self.root.title('Chess')
-        self.root.geometry('500x500')
+        self.root.geometry('600x600')
 
         self.pieces = []
         self.squares = []

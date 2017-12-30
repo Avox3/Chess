@@ -2,69 +2,81 @@
 
 from Tkinter import Tk, Grid, Button
 
-from pieces import Pawn, Bishop, Knight, Rook, Queen, King, BLACK, WHITE
+from pieces import ChessPiece, Pawn, Bishop, Knight, Rook, Queen, King
 
 
 class ChessBoard:
 
-    def get_symmetric(self, point, piece, twice=False):
+    def get_symmetric(self, point, piece_type, twice=False):
+        """
+        Creates pieces of both sides by piece's type and location in the board.
+        :param point: the location
+        :type point: tuple
+        :param piece_type: type is the piece
+        :type piece_type: instance of ChessPiece
+        :param twice: piece exists twice in the board for each side
         """
 
-        :param point:
-        :param piece:
-        :param twice:
-        :return:
-        """
+        if piece_type.__base__ is not ChessPiece:  # check if inherit from ChessPiece
+            return
 
-        curr_pieces = {point: piece}
+        curr_pieces = []
+
+        # set black side
+        icon_path = piece_type.__name__.lower() + '_black'
+        curr_pieces.append(Pawn(*point, icon_path=icon_path))
 
         if twice:
-            curr_pieces[(point[0], 7-point[1])] = piece.__class__(piece.icon_path)
+            row, col = point
+            curr_pieces.append(Pawn(row, 7 - col, icon_path=icon_path))
 
-        if piece.is_white:
-            icon = piece.icon_path.replace('white', 'black')
-        else:
-            icon = piece.icon_path.replace('black', 'white')
+        # set white side
+        icon_path = piece_type.__name__.lower() + '_white'
 
-        for curr_point, curr_piece in curr_pieces.items():
-            curr_pieces[(7-curr_point[0], curr_point[1])] = curr_piece.__class__(icon)
+        for piece in curr_pieces:
+            row, col = piece.get_point()
+            self.pieces.append(Pawn(7 - row, col, icon_path=icon_path))
 
-        self.pieces.update(curr_pieces)
+        self.pieces += curr_pieces
 
     def set_starting_pieces(self):
-        """
-
-        :return:
-        """
+        """ Sets starting pieces. """
 
         # first row pieces
-        self.get_symmetric((0, 0), Rook('rook_black'), twice=True)
-        self.get_symmetric((0, 1), Knight('knight_black'), twice=True)
-        self.get_symmetric((0, 2), Bishop('bishop_black'), twice=True)
+        self.get_symmetric((0, 0), Rook, twice=True)
+        self.get_symmetric((0, 1), Knight, twice=True)
+        self.get_symmetric((0, 2), Bishop, twice=True)
 
-        self.get_symmetric((0, 3), Queen('queen_black'))
-        self.get_symmetric((0, 4), King('king_black'))
+        self.get_symmetric((0, 3), Queen)
+        self.get_symmetric((0, 4), King)
 
         # second row pieces - pawns
         for col in xrange(4):
-            self.get_symmetric((1, col), Pawn('pawn_black'), twice=True)
+            self.get_symmetric((1, col), Pawn, twice=True)
 
-    def reverse_board(self):
-        # self.squares = [row[::-1] for row in self.squares[::-1]]
-        self.pieces = {(row - 7, col - 7): piece for (row, col), piece in self.pieces.items()}
+    def switch_side(self):
+        """ Switches side of the board. """
+
+        for piece in self.pieces:
+            row, col = piece.get_point()
+            piece.set_point(7 - row, col)
+
         self.update_board()
 
     def get_piece(self, row, col):
         """
-
-        :param row:
-        :param col:
-        :return:
+        Returns piece by location.
+        :param row: x coordinate on the board
+        :param col: y coordinate on the board
+        :rtype: ChessPiece | None
         """
-        return self.pieces.get((row, col))
+
+        for piece in self.pieces:
+            if piece.get_point() == (row, col):
+                return piece
 
     def clear_board(self):
-        """This func clears the board from possible movements, shows only the pieces."""
+        """ Clears the board from possible movements, shows only the pieces. """
 
         for row, col in self.possible_movements:
             square_btn = self.squares[row][col]
@@ -72,71 +84,75 @@ class ChessBoard:
 
     def get_possible_movements(self, square):
         """
-        This func updates the piece's optional movements.
+        Updates the piece's optional movements.
         :type square: SquareBtn
         """
 
         # set moving piece
-        self.moving_piece = square
-        self.possible_movements = self.get_piece(*square.get_point()).get_movements(square.get_point(), self.squares)
+        self.moving_piece = self.get_piece(*square.get_point())
+        if not self.moving_piece:
+            return
+        self.possible_movements = self.moving_piece.get_movements(self.squares)
 
     def button_command(self, point):
+        """
+        Handle any type of click on the board.
+        :param point: location of the clicked square
+        :rtype point: tuple
+        """
 
+        # clear previous click changes
         self.clear_board()
 
         row, col = point
-
         square_btn = self.squares[row][col]
-        piece = square_btn.piece
+        piece = self.get_piece(row, col)
 
         if piece and piece.is_white == self.white_turn:  # choose piece to move
             self.get_possible_movements(square_btn)
 
-        elif square_btn.get_point() in self.possible_movements:  # move piece to destination
-            self.move_piece(self.moving_piece, square_btn)
+        elif (row, col) in self.possible_movements:  # move piece to destination
+            self.move_piece(square_btn)
 
         self.update_board()
 
-    def move_piece(self, src_square, dst_square):
+    def move_piece(self, dst_square):
         """
-        This func moves the
-        :param src_square:
-        :param dst_square:
-        :return:
+        Moves the piece to destination square.
+        :type dst_square: SquareBtn
         """
 
         # move piece from src to dst
-        dst_square.piece = src_square.piece
-        src_square.piece = None
+        self.moving_piece.set_point(*dst_square.get_point())
         self.moving_piece = None
         self.possible_movements = []
+
         # change turn
         self.white_turn = not self.white_turn
-        self.reverse_board()
-        self.clear_board()
+        self.switch_side()
 
     def update_board(self):
-        """This func updates the pieces and possible movements."""
+        """ Updates pieces and possible movements. """
 
         for row in xrange(8):
             for col in xrange(8):
 
                 square_btn = self.squares[row][col]
+                piece = self.get_piece(row, col)
+                if piece:
 
-                if self.get_piece(row, col):
-
-                    print square_btn.piece.icon_path
-                    square_btn.config(image=square_btn.piece.icon)
-                    square_btn.image = square_btn.piece.icon
+                    square_btn.config(image=piece.icon)
+                    square_btn.image = piece.icon
                 else:
                     square_btn.config(image='')
-                    square_btn.image = ''
 
                 if (row, col) in self.possible_movements:
                     square_btn.config(bg="green")
 
     def starting(self):
+        """ Creates the board's rows and columns. """
 
+        # create pieces
         self.set_starting_pieces()
         square_style = {'borderwidth': 0, 'width': 5, 'height': 2}
 
@@ -157,11 +173,10 @@ class ChessBoard:
                 square_btn = SquareBtn(parent=self.root, row=row, col=col, bg=square_color, **square_style)
                 square_btn.grid(row=row, column=col, sticky='nsew')
 
-                square_piece = self.pieces.get((row, col))
+                square_piece = self.get_piece(row, col)
                 if square_piece:
                     square_btn.config(image=square_piece.icon)
                     square_btn.image = square_piece.icon
-                    square_btn.piece = square_piece
 
                 square_btn.config(command=lambda x=(row, col): self.button_command(x))
 
@@ -174,7 +189,7 @@ class ChessBoard:
         self.root.title('Chess')
         self.root.geometry('500x500')
 
-        self.pieces = {}
+        self.pieces = []
         self.squares = []
         self.white_turn = True
 
@@ -190,14 +205,12 @@ class ChessBoard:
 
 class SquareBtn(Button):
 
-    def __init__(self, parent, row, col, bg, piece=None, *args, **kwargs):
+    def __init__(self, parent, row, col, bg, *args, **kwargs):
         """
-
-        :param parent:
-        :param row:
-        :param col:
-        :type piece:
-        :return:
+        Create square.
+        :param parent: the layer on which it exists
+        :param row: x coordinate on the board
+        :param col: y coordinate on the board
         """
 
         Button.__init__(self, parent, bg=bg, *args, **kwargs)
@@ -207,17 +220,11 @@ class SquareBtn(Button):
 
     def set_background(self, color):
         """
-
-        :param color:
-        :return:
+        Sets square's background color.
+        :type color: string
         """
         self.config(bg=color)
 
     def get_point(self):
-        """
-
-        :return:
-        """
+        """ Returns square's location. """
         return self.row, self.col
-
-
